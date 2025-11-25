@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+env/
+mlruns/
+data/processed/
+data/raw/
+__MACOSX/
+.DS_Store
+secrets.env

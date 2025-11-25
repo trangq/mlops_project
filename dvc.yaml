@@ -1,0 +1,15 @@
+stages:
+  preprocess:
+    cmd: python scripts/preprocess.py data/titanic.csv data/processed/cleaned_data.csv
+    deps:
+      - scripts/preprocess.py
+      - data/titanic.csv
+    outs:
+      - data/processed/cleaned_data.csv
+  train:
+    cmd: python scripts/train_model.py data/processed/cleaned_data.csv
+    deps:
+      - scripts/train_model.py
+      - data/processed/cleaned_data.csv
+    outs:
+      - mlruns
