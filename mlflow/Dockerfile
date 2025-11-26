@@ -1,18 +1,27 @@
-# Sử dụng image MLflow chính thức làm base
-FROM ghcr.io/mlflow/mlflow:v2.13.0
+## MLflow Server Dockerfile (version 3.6.0)
 
-# Cài đặt psycopg2-binary
-# Chúng ta cài đặt nó dưới tài khoản người dùng root trước, sau đó chuyển lại sang mlflow
+FROM ghcr.io/mlflow/mlflow:v3.6.0
+
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
-# Cài đặt psycopg2-binary dưới quyền ROOT để tránh lỗi user ID
-# Lỗi 'unable to find user mlflow' đã bị loại bỏ
 RUN pip install --no-cache-dir psycopg2-binary
 
+COPY scripts/wait-for-it.sh /usr/local/bin/scripts/wait-for-it.sh
+RUN chmod +x /usr/local/bin/scripts/wait-for-it.sh
 
-# End of Dockerfile - run as the default user from the base image
+WORKDIR /mlflow
 
+RUN if ! id -u mlflow >/dev/null 2>&1; then \
+    groupadd -r mlflow && useradd -r -g mlflow -m -d /home/mlflow -s /bin/bash mlflow || true; \
+    fi
+
+USER mlflow
+
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000"]

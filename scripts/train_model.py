@@ -13,18 +13,13 @@ import socket
 
 MODEL_NAME = "TitanicClassifier"
 
-
-def get_mlflow_uri():
-    try:
-        socket.gethostbyname("mlflow-server")
-        return "http://mlflow-server:5000"
-    except socket.gaierror:
-        return "http://localhost:5001"
-
-
-MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", get_mlflow_uri())
+# Luôn dùng host của container MLflow
+MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow-server:5000")
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+# Tạo experiment nếu chưa có
 mlflow.set_experiment(f"{MODEL_NAME}_Experiment")
+
 
 
 def train(input_file: str):

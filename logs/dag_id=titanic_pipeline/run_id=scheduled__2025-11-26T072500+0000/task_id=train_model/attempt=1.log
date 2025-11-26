@@ -1,0 +1,72 @@
+[2025-11-26T07:30:04.374+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2025-11-26T07:30:04.403+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: titanic_pipeline.train_model scheduled__2025-11-26T07:25:00+00:00 [queued]>
+[2025-11-26T07:30:04.410+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: titanic_pipeline.train_model scheduled__2025-11-26T07:25:00+00:00 [queued]>
+[2025-11-26T07:30:04.412+0000] {taskinstance.py:2306} INFO - Starting attempt 1 of 2
+[2025-11-26T07:30:04.426+0000] {taskinstance.py:2330} INFO - Executing <Task(BashOperator): train_model> on 2025-11-26 07:25:00+00:00
+[2025-11-26T07:30:04.431+0000] {standard_task_runner.py:63} INFO - Started process 74 to run task
+[2025-11-26T07:30:04.434+0000] {standard_task_runner.py:90} INFO - Running: ['***', 'tasks', 'run', 'titanic_pipeline', 'train_model', 'scheduled__2025-11-26T07:25:00+00:00', '--job-id', '5', '--raw', '--subdir', 'DAGS_FOLDER/training_pipeline_dag.py', '--cfg-path', '/tmp/tmpc4yc27d2']
+[2025-11-26T07:30:04.436+0000] {standard_task_runner.py:91} INFO - Job 5: Subtask train_model
+[2025-11-26T07:30:04.453+0000] {warnings.py:109} WARNING - /home/***/.local/lib/python3.10/site-packages/***/settings.py:195: DeprecationWarning: The sql_alchemy_conn option in [core] has been moved to the sql_alchemy_conn option in [database] - the old setting has been used, but please update your config.
+  SQL_ALCHEMY_CONN = conf.get("database", "SQL_ALCHEMY_CONN")
+
+[2025-11-26T07:30:04.517+0000] {task_command.py:426} INFO - Running <TaskInstance: titanic_pipeline.train_model scheduled__2025-11-26T07:25:00+00:00 [running]> on host acfcbdbba603
+[2025-11-26T07:30:04.588+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='titanic_pipeline' AIRFLOW_CTX_TASK_ID='train_model' AIRFLOW_CTX_EXECUTION_DATE='2025-11-26T07:25:00+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='scheduled__2025-11-26T07:25:00+00:00'
+[2025-11-26T07:30:04.589+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2025-11-26T07:30:04.611+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2025-11-26T07:30:04.612+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'python /opt/***/scripts/train_model.py /opt/***/data/cleaned_data.csv']
+[2025-11-26T07:30:04.626+0000] {subprocess.py:86} INFO - Output:
+[2025-11-26T07:30:10.957+0000] {subprocess.py:93} INFO - 2025/11/26 07:30:10 WARNING mlflow.models.model: `artifact_path` is deprecated. Please use `name` instead.
+[2025-11-26T07:30:11.622+0000] {subprocess.py:93} INFO - Loading processed data from: /opt/***/data/cleaned_data.csv
+[2025-11-26T07:30:11.629+0000] {subprocess.py:93} INFO - 
+[2025-11-26T07:30:11.631+0000] {subprocess.py:93} INFO - === Logging model to MLflow ===
+[2025-11-26T07:30:11.631+0000] {subprocess.py:93} INFO - 🏃 View run shivering-skink-733 at: http://mlflow-server:5000/#/experiments/1/runs/939b2b01f1954c828f586f8dbc148224
+[2025-11-26T07:30:11.632+0000] {subprocess.py:93} INFO - 🧪 View experiment at: http://mlflow-server:5000/#/experiments/1
+[2025-11-26T07:30:11.632+0000] {subprocess.py:93} INFO - Traceback (most recent call last):
+[2025-11-26T07:30:11.633+0000] {subprocess.py:93} INFO -   File "/opt/***/scripts/train_model.py", line 95, in <module>
+[2025-11-26T07:30:11.633+0000] {subprocess.py:93} INFO -     train(sys.argv[1])
+[2025-11-26T07:30:11.633+0000] {subprocess.py:93} INFO -   File "/opt/***/scripts/train_model.py", line 62, in train
+[2025-11-26T07:30:11.634+0000] {subprocess.py:93} INFO -     model_info = mlflow.sklearn.log_model(
+[2025-11-26T07:30:11.634+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/sklearn/__init__.py", line 426, in log_model
+[2025-11-26T07:30:11.637+0000] {subprocess.py:93} INFO -     return Model.log(
+[2025-11-26T07:30:11.638+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/models/model.py", line 1165, in log
+[2025-11-26T07:30:11.639+0000] {subprocess.py:93} INFO -     model = _create_logged_model(
+[2025-11-26T07:30:11.640+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/tracking/fluent.py", line 2330, in _create_logged_model
+[2025-11-26T07:30:11.641+0000] {subprocess.py:93} INFO -     return MlflowClient()._create_logged_model(
+[2025-11-26T07:30:11.642+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/tracking/client.py", line 5500, in _create_logged_model
+[2025-11-26T07:30:11.643+0000] {subprocess.py:93} INFO -     return self._tracking_client.create_logged_model(
+[2025-11-26T07:30:11.643+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/telemetry/track.py", line 30, in wrapper
+[2025-11-26T07:30:11.644+0000] {subprocess.py:93} INFO -     result = func(*args, **kwargs)
+[2025-11-26T07:30:11.644+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/tracking/_tracking_service/client.py", line 870, in create_logged_model
+[2025-11-26T07:30:11.645+0000] {subprocess.py:93} INFO -     return self.store.create_logged_model(
+[2025-11-26T07:30:11.645+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/store/tracking/rest_store.py", line 932, in create_logged_model
+[2025-11-26T07:30:11.647+0000] {subprocess.py:93} INFO -     response_proto = self._call_endpoint(CreateLoggedModel, req_body)
+[2025-11-26T07:30:11.647+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/store/tracking/rest_store.py", line 203, in _call_endpoint
+[2025-11-26T07:30:11.648+0000] {subprocess.py:93} INFO -     return call_endpoint(
+[2025-11-26T07:30:11.648+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/utils/rest_utils.py", line 596, in call_endpoint
+[2025-11-26T07:30:11.649+0000] {subprocess.py:93} INFO -     response = verify_rest_response(response, endpoint)
+[2025-11-26T07:30:11.649+0000] {subprocess.py:93} INFO -   File "/home/***/.local/lib/python3.10/site-packages/mlflow/utils/rest_utils.py", line 321, in verify_rest_response
+[2025-11-26T07:30:11.650+0000] {subprocess.py:93} INFO -     raise MlflowException(
+[2025-11-26T07:30:11.650+0000] {subprocess.py:93} INFO - mlflow.exceptions.MlflowException: API request to endpoint /api/2.0/mlflow/logged-models failed with error code 404 != 200. Response body: '<!doctype html>
+[2025-11-26T07:30:11.651+0000] {subprocess.py:93} INFO - <html lang=en>
+[2025-11-26T07:30:11.652+0000] {subprocess.py:93} INFO - <title>404 Not Found</title>
+[2025-11-26T07:30:11.652+0000] {subprocess.py:93} INFO - <h1>Not Found</h1>
+[2025-11-26T07:30:11.653+0000] {subprocess.py:93} INFO - <p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+[2025-11-26T07:30:11.654+0000] {subprocess.py:93} INFO - '
+[2025-11-26T07:30:12.404+0000] {subprocess.py:97} INFO - Command exited with return code 1
+[2025-11-26T07:30:12.416+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2025-11-26T07:30:12.486+0000] {taskinstance.py:2905} ERROR - Task failed with exception
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/models/taskinstance.py", line 465, in _execute_task
+    result = _execute_callable(context=context, **execute_callable_kwargs)
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/models/taskinstance.py", line 432, in _execute_callable
+    return execute_callable(context=context, **execute_callable_kwargs)
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/models/baseoperator.py", line 401, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/airflow/.local/lib/python3.10/site-packages/airflow/operators/bash.py", line 243, in execute
+    raise AirflowException(
+airflow.exceptions.AirflowException: Bash command failed. The command returned a non-zero exit code 1.
+[2025-11-26T07:30:12.496+0000] {taskinstance.py:1206} INFO - Marking task as UP_FOR_RETRY. dag_id=titanic_pipeline, task_id=train_model, run_id=scheduled__2025-11-26T07:25:00+00:00, execution_date=20251126T072500, start_date=20251126T073004, end_date=20251126T073012
+[2025-11-26T07:30:12.515+0000] {standard_task_runner.py:110} ERROR - Failed to execute job 5 for task train_model (Bash command failed. The command returned a non-zero exit code 1.; 74)
+[2025-11-26T07:30:12.556+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 1
+[2025-11-26T07:30:12.584+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2025-11-26T07:30:12.588+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
