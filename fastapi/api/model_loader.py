@@ -31,7 +31,6 @@ def load_model():
     model_version = latest_versions[0].version
     print(f">>> Loading model {MODEL_NAME} version {model_version}")
 
-    # Gán alias 'prod' (nếu muốn)
     try:
         client.set_registered_model_alias(
             name=MODEL_NAME,

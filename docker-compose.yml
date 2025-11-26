@@ -1,26 +1,8 @@
-
 services:
-  # --- MinIO Service (Storage for DVC and MLflow Artifacts) ---
-  minio:
-    image: minio/minio
-    ports:
-      - "9000:9000"  # API
-      - "9001:9001"  # Console
-    volumes:
-      - minio_data:/data
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-  
-  # --- Airflow Services (Sử dụng Build cho DVC/MLflow) ---
+
   airflow-postgres:
     image: postgres:13
+    container_name: airflow-postgres
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
@@ -28,67 +10,52 @@ services:
     volumes:
       - airflow_db:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: [ "CMD", "pg_isready", "-U", "airflow" ]
       interval: 5s
       retries: 5
 
   airflow-redis:
     image: redis:latest
+    container_name: airflow-redis
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       retries: 5
-  
-  airflow-init:
-    # THAY THẾ: Dùng build context để cài DVC/MLflow cho Airflow
-    build: ./airflow 
-    command: bash -c "airflow db init && airflow users create --username airflow --password airflow --firstname Anonymous --lastname User --role Admin --email admin@example.org"
-    depends_on: # <--- SỬA TẠI ĐÂY
-      airflow-postgres:
-        condition: service_healthy
-      airflow-redis:
-        condition: service_healthy
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
-      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
 
+  # Khởi tạo DB và User Admin
+  airflow-init:
+    build: ./airflow
+    container_name: airflow-init
+    command: bash -c "airflow db init && airflow users create --username airflow --password airflow --firstname Anonymous --lastname User --role Admin --email admin@example.org"
+    depends_on:
+      - airflow-postgres
+      - airflow-redis
+  
+ 
   airflow-webserver:
-    # THAY THẾ: Dùng build context để cài DVC/MLflow cho Airflow
-    build: ./airflow 
+    build: ./airflow
+    container_name: airflow-webserver
     command: webserver
     ports:
       - "8080:8080"
-    depends_on: # <--- SỬA TẠI ĐÂY
-      airflow-init:
-        condition: service_completed_successfully
-      airflow-postgres:
-        condition: service_healthy
-      airflow-redis:
-        condition: service_healthy
-      mlflow-server:
-        condition: service_started # Airflow phụ thuộc vào MLflow
+    depends_on:
+      - airflow-init
+      - airflow-postgres
+      - airflow-redis
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./scripts:/opt/airflow/scripts  # Ánh xạ scripts
-      - ./data:/opt/airflow/data        # Ánh xạ data/dvc (quan trọng)
-      - ./.dvc:/opt/airflow/.dvc        # Ánh xạ DVC config
+      - airflow_logs:/opt/airflow/logs 
+      - ./plugins:/opt/airflow/plugins
     environment:
-      # --- Airflow ENV Vars ---
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
-      # --- MLflow/DVC ENV Vars (quan trọng) ---
-      - MLFLOW_TRACKING_URI=http://mlflow-server:5000 # Dùng tên service nội bộ
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__EXPOSE_CELERY_LOGS=True
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -108,58 +75,51 @@ services:
         condition: service_started
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
-      - ./scripts:/opt/airflow/scripts
+      - airflow_logs:/opt/airflow/logs 
+      - ./plugins:/opt/airflow/plugins
+      - ./scripts:/opt/airflow/scripts 
       - ./data:/opt/airflow/data
-      - ./.dvc:/opt/airflow/.dvc 
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
-      # --- MLflow/DVC ENV Vars ---
-      - MLFLOW_TRACKING_URI=http://mlflow-server:5000
-      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
   airflow-worker:
-    # THAY THẾ: Dùng build context
-    build: ./airflow 
+    build: ./airflow
+    container_name: airflow-worker
     command: celery worker
-    depends_on: # <--- SỬA TẠI ĐÂY
-      airflow-init:
-        condition: service_completed_successfully
-      airflow-postgres:
-        condition: service_healthy
-      airflow-redis:
-        condition: service_healthy
-      mlflow-server:
-        condition: service_started
+    depends_on:
+      - airflow-init
+      - airflow-postgres
+      - airflow-redis
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./logs:/opt/airflow/logs
+      - airflow_logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
-      - ./.dvc:/opt/airflow/.dvc 
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
-      # --- MLflow/DVC ENV Vars ---
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
+      # --- MLFLOW CONFIG (Cần cho Worker khi chạy DAG) ---
       - MLFLOW_TRACKING_URI=http://mlflow-server:5000
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-  
+      - AWS_DEFAULT_REGION=us-east-1
+
   # --- MLflow Services ---
   mlflow-postgres:
     image: postgres:13
+    container_name: mlflow-postgres
     ports:
-      - "5433:5432" # Host: 5433, Container: 5432
+      - "5433:5432"
     volumes:
       - mlflow_db:/var/lib/postgresql/data
     environment:
@@ -167,9 +127,47 @@ services:
       - POSTGRES_PASSWORD=mlflow
       - POSTGRES_DB=mlflow
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "mlflow"]
+      test: [ "CMD", "pg_isready", "-U", "mlflow" ]
       interval: 5s
       retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # minio-init:
+  #   image: minio/mc
+  #   container_name: minio-init
+  #   depends_on:
+
+  #   # Phụ thuộc MinIO phải healthy
+  #     - minio
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadmin
+  #   # Chờ MinIO ready rồi tạo bucket
+  #   command: >
+  #     /bin/sh -c "
+  #     sleep 10 &&
+  #     /usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+  #     /usr/bin/mc mb local/mlflow-artifacts --ignore-existing
+  #     "
+
+
 
   mlflow-server:
     build:
@@ -180,7 +178,7 @@ services:
     depends_on:
       - mlflow-postgres
       - minio
-      - minio-setup
+      # - minio-setup
     command: [
       "mlflow", "server",
       "--host", "0.0.0.0",
@@ -203,54 +201,48 @@ services:
       timeout: 10s
       retries: 5
 
-  # --- FastAPI Model Serving (B, F) ---
+
+  # --- FastAPI Model Serving Service ---
   fastapi-service:
-    build: ./fastapi # Sử dụng custom image với Pytest và dependencies
+    build: ./fastapi
+    container_name: fastapi-service
     ports:
-      - "8000:8000" # API endpoint
-      - "8081:8080" # Prometheus metrics endpoint (Host: 8081, Container: 8080)
+      - "8000:8000"
     depends_on:
       - mlflow-server
+    volumes:
+      - ./fastapi/api:/app
     environment:
-      # FastAPI cần các biến này để tải model Production từ MLflow/MinIO
       - MLFLOW_TRACKING_URI=http://mlflow-server:5000
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
       - MODEL_NAME=TitanicClassifier
       - MODEL_STAGE=Production
-  
-  # --- Prometheus Monitoring (E) ---
+
+  # --- Monitoring Services ---
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.40.0
+    container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-    
-  # --- Grafana Visualization (E) ---
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.4.0
+    container_name: grafana
     ports:
       - "3000:3000"
-    volumes:
-      # Tự động cấu hình Prometheus là Datasource
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning 
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
     depends_on:
       - prometheus
-  # --- MinIO Setup Service (Tự động tạo MLflow Bucket) ---
-  minio-setup:
-    image: minio/mc # Sử dụng MinIO Client
-    depends_on:
-      - minio
-    environment:
-      # Định nghĩa MinIO Host nội bộ
-      MC_HOST_minio: http://minioadmin:minioadmin@minio:9000 
-    command: ["/bin/sh", "-c", "/usr/bin/mc rm -r --force minio/mlflow-artifacts; /usr/bin/mc mb minio/mlflow-artifacts; exit 0;"]
-      
+
 volumes:
   minio_data:
   airflow_db:
   mlflow_db:
+  airflow_logs:

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 
 from schemas import PredictRequest, PredictResponse
-from model_loader import load_model
+from fastapi.api.model_loader import load_model
 
 app = FastAPI(title="Titanic Model Serving")
 

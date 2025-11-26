@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'fastapi'
+    static_configs:
+      # Prometheus sẽ truy cập FastAPI qua tên service
+      - targets: ['fastapi-service:8000'] 
+    metrics_path: /metrics # Nếu API của bạn có endpoint metrics
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['localhost:9100'] # Nếu bạn dùng Node Exporter
