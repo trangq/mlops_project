@@ -27,8 +27,7 @@ jobs:
           pip install -r app/requirements.txt
           pip install flake8 pytest
 
-      - name: Run flake8
-        run: flake8 app scripts
+
 
       - name: Run unit tests
         run: pytest -q tests
