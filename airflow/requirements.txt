@@ -1,6 +1,4 @@
 # Add any extra packages needed for your DAGs
 mlflow
-scikit-learn
 pandas
-# DB driver for Postgres (used by Airflow and sometimes MLflow)
 psycopg2-binary

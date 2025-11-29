@@ -28,8 +28,19 @@ services:
     container_name: airflow-init
     command: bash -c "airflow db init && airflow users create --username airflow --password airflow --firstname Anonymous --lastname User --role Admin --email admin@example.org"
     depends_on:
-      - airflow-postgres
-      - airflow-redis
+      airflow-postgres:
+        condition: service_healthy
+      airflow-redis:
+        condition: service_healthy
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
+      - AIRFLOW_UID=50000
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
   
  
   airflow-webserver:
@@ -48,7 +59,7 @@ services:
       - ./plugins:/opt/airflow/plugins
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
@@ -61,10 +72,9 @@ services:
       retries: 5
 
   airflow-scheduler:
-    # THAY THẾ: Dùng build context
     build: ./airflow 
     command: scheduler
-    depends_on: # <--- SỬA TẠI ĐÂY
+    depends_on: 
       airflow-init:
         condition: service_completed_successfully
       airflow-postgres:
@@ -81,7 +91,7 @@ services:
       - ./data:/opt/airflow/data
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
@@ -102,7 +112,7 @@ services:
       - ./data:/opt/airflow/data
     environment:
       - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
@@ -204,14 +214,14 @@ services:
 
   # --- FastAPI Model Serving Service ---
   fastapi-service:
-    build: ./fastapi
+    build: ./app             
     container_name: fastapi-service
     ports:
       - "8000:8000"
     depends_on:
       - mlflow-server
     volumes:
-      - ./fastapi/api:/app
+      - ./app/api:/app        
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow-server:5000
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
@@ -219,6 +229,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=minioadmin
       - MODEL_NAME=TitanicClassifier
       - MODEL_STAGE=Production
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   # --- Monitoring Services ---
   prometheus:

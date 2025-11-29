@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 import os
 
-# --- Configuration (Based on DVC arguments, not hardcoded paths) ---
 
 def preprocess_titanic(input_file: str, output_file: str):
     """
@@ -52,14 +51,12 @@ def preprocess_titanic(input_file: str, output_file: str):
 
 
 if __name__ == '__main__':
-    # Logic kiểm tra đối số: Phải có 2 đối số (input path và output path)
     if len(sys.argv) != 3:
-        # Nếu thiếu đối số, DVC/Airflow sẽ báo lỗi, nhưng ta cung cấp hướng dẫn rõ ràng
         print("Error: Missing input/output paths.")
         print("Usage: python preprocess.py <input_raw_csv_path> <output_cleaned_csv_path>")
         sys.exit(1)
         
-    input_path = sys.argv[1] # Đường dẫn Input (e.g., data/raw_data.csv)
+    input_path = sys.argv[1] 
     output_path = sys.argv[2] # Đường dẫn Output (e.g., data/cleaned_data.csv)
     
     preprocess_titanic(input_path, output_path)
