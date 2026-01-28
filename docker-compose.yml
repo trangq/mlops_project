@@ -3,6 +3,9 @@ services:
   airflow-postgres:
     image: postgres:13
     container_name: airflow-postgres
+    hostname: airflow-postgres  # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
@@ -17,6 +20,9 @@ services:
   airflow-redis:
     image: redis:latest
     container_name: airflow-redis
+    hostname: airflow-redis      # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -26,6 +32,9 @@ services:
   airflow-init:
     build: ./airflow
     container_name: airflow-init
+    hostname: airflow-init       # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     command: bash -c "airflow db init && airflow users create --username airflow --password airflow --firstname Anonymous --lastname User --role Admin --email admin@example.org"
     depends_on:
       airflow-postgres:
@@ -46,6 +55,9 @@ services:
   airflow-webserver:
     build: ./airflow
     container_name: airflow-webserver
+    hostname: airflow-webserver  # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     command: webserver
     ports:
       - "8080:8080"
@@ -72,7 +84,11 @@ services:
       retries: 5
 
   airflow-scheduler:
-    build: ./airflow 
+    build: ./airflow
+    container_name: airflow-scheduler  # ← THÊM container_name
+    hostname: airflow-scheduler  # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     command: scheduler
     depends_on: 
       airflow-init:
@@ -96,9 +112,13 @@ services:
       - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/1
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080
+
   airflow-worker:
     build: ./airflow
     container_name: airflow-worker
+    hostname: airflow-worker     # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     command: celery worker
     depends_on:
       - airflow-init
@@ -128,6 +148,9 @@ services:
   mlflow-postgres:
     image: postgres:13
     container_name: mlflow-postgres
+    hostname: mlflow-postgres    # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "5433:5432"
     volumes:
@@ -144,6 +167,9 @@ services:
   minio:
     image: minio/minio
     container_name: minio
+    hostname: minio              # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -159,30 +185,14 @@ services:
       timeout: 20s
       retries: 3
 
-  # minio-init:
-  #   image: minio/mc
-  #   container_name: minio-init
-  #   depends_on:
-
-  #   # Phụ thuộc MinIO phải healthy
-  #     - minio
-  #   environment:
-  #     MINIO_ROOT_USER: minioadmin
-  #     MINIO_ROOT_PASSWORD: minioadmin
-  #   # Chờ MinIO ready rồi tạo bucket
-  #   command: >
-  #     /bin/sh -c "
-  #     sleep 10 &&
-  #     /usr/bin/mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
-  #     /usr/bin/mc mb local/mlflow-artifacts --ignore-existing
-  #     "
-
-
-
   mlflow-server:
     build:
       context: ./mlflow
       dockerfile: Dockerfile
+    container_name: mlflow-server  # ← ĐÃ CÓ SẴN
+    hostname: mlflow-server      # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "5001:5000"  # Host:5001 -> Container:5000
     depends_on:
@@ -216,6 +226,9 @@ services:
   fastapi-service:
     build: ./app             
     container_name: fastapi-service
+    hostname: fastapi-service    # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "8000:8000"
     depends_on:
@@ -235,6 +248,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.40.0
     container_name: prometheus
+    hostname: prometheus         # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "9090:9090"
     volumes:
@@ -245,12 +261,21 @@ services:
   grafana:
     image: grafana/grafana:10.4.0
     container_name: grafana
+    hostname: grafana            # ← THÊM để fix DNS
+    networks:                    # ← THÊM để fix DNS
+      - mlops                    # ← THÊM để fix DNS
     ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     depends_on:
       - prometheus
+
+# ============ THÊM NETWORK DEFINITION ============
+networks:
+  mlops:
+    driver: bridge
+# =================================================
 
 volumes:
   minio_data:

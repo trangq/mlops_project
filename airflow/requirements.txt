@@ -2,3 +2,5 @@
 mlflow
 pandas
 psycopg2-binary
+scikit-learn 
+boto3
