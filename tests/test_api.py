@@ -1,25 +1,18 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-# KHÔNG dùng sys.path.append nữa
-from app.api.main import app  # Import trực tiếp từ gốc
+from unittest.mock import patch, MagicMock
 
+# Bước 1: Tạo một Mock object trước
+mock_model = MagicMock()
+mock_model.predict.return_value = [1] # Khi gọi model.predict() sẽ trả về [1]
 
-# Giả lập hàm load_model để không kết nối tới MLflow/S3
-with patch("app.api.model_loader.load_model") as mock_load:
-    # Giả lập một object có hàm predict (giống model thật)
-    class MockModel:
-        def predict(self, data):
-            import numpy as np
-            return np.array([1]) # Luôn trả về kết quả dự đoán là 1
-            
-    mock_load.return_value = MockModel()
-    
-    # Import app SAU KHI đã patch hàm load_model
+# Bước 2: Patch hàm load_model TRƯỚC khi import app
+# Chúng ta dùng context manager hoặc patch thủ công ở cấp module
+with patch("app.api.model_loader.load_model", return_value=mock_model):
     from app.api.main import app
+    client = TestClient(app)
 
-client = TestClient(app)
-
+# Bước 3: Viết các hàm test như bình thường
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
@@ -27,9 +20,18 @@ def test_health():
 
 def test_predict():
     payload = {
-        "Age": 30, "Pclass": 3, "Fare": 15.5, "FamilySize": 2, "Sex_male": 1
+        "Age": 30, 
+        "Pclass": 3, 
+        "Fare": 15.5, 
+        "FamilySize": 2, 
+        "Sex_male": 1
     }
     response = client.post("/predict", json=payload)
+    
+    # Debug nếu lỗi
+    if response.status_code != 200:
+        print(response.json())
+        
     assert response.status_code == 200
     assert "prediction" in response.json()
-    assert response.json()["prediction"] == [1] # Kiểm tra khớp với giá trị mock
+    assert response.json()["prediction"] == [1]
