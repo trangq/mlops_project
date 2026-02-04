@@ -11,3 +11,5 @@ httpx
 pytest
 requests
 numpy
+boto3
+botocore

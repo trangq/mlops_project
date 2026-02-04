@@ -2,28 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy và cài dependencies
-COPY requirements.txt .
+# 1. Cài đặt dependencies
+COPY app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. COPY SOURCE CODE VÀ TESTS
+# 2. Copy toàn bộ thư mục app vào /app/app
+# Điều này tạo ra cấu trúc: /app/app/api/main.py
+COPY app/ /app/app/
 
-COPY api/main.py /app/
-COPY api/model_loader.py /app/
-COPY api/tests /app/tests
-COPY api/schemas.py /app/ 
+# 3. Biến môi trường để Python tìm thấy module 'app'
+ENV PYTHONPATH=/app
 
+EXPOSE 8000
 
-
-# 3. EXPOSE PORTS
-# 8000: Uvicorn port (API), 8080: Prometheus metrics port
-EXPOSE 8000 8080
-
-# 4. RUN SERVER
-
-
-# Export PYTHONPATH để Python thấy main.py
-# ENV PYTHONPATH=/app/api
-
-# Default command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 4. Chạy app bằng module path
+CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
