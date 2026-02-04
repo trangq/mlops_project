@@ -1,24 +1,31 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 import pandas as pd
-
-from app.api.schemas import PredictRequest, PredictResponse
 from app.api.model_loader import load_model
+from pydantic import BaseModel
 
-app = FastAPI(title="Titanic Model Serving")
+app = FastAPI()
 
-# Load model once at startup
+# Load model khi khởi chạy
 model = load_model()
+
+class TitanicRequest(BaseModel):
+    Age: float
+    Pclass: int
+    Fare: float
+    FamilySize: int
+    Sex_male: int
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-@app.post("/predict", response_model=PredictResponse)
-def predict(request: PredictRequest):
-    # Convert to DataFrame
-    df = pd.DataFrame([request.dict()])
-    # Predict
-    pred = model.predict(df)
-    return PredictResponse(prediction=int(pred[0]))
-
+@app.post("/predict")
+def predict(request: TitanicRequest):
+    # SỬA TẠI ĐÂY: Dùng model_dump() thay cho dict() để đúng chuẩn Pydantic V2
+    data_dict = request.model_dump()
+    df = pd.DataFrame([data_dict])
+    
+    prediction = model.predict(df)
+    
+    # prediction thường là numpy array, chuyển về list để FastAPI trả về JSON
+    return {"prediction": prediction.tolist()}

@@ -34,7 +34,7 @@ jobs:
           PYTHONPATH: .  # Giúp pytest thấy được folder /app và /scripts
         run: |
           # Chạy cả 2 file test trong folder tests/
-          pytest tests/test_api.py tests/test_preprocess.py -v
+          pytest tests/test_api.py tests/test_preprocess.py -v -p no:warnings
 
       # -----------------------------
       # Validate docker-compose file
