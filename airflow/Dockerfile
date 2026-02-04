@@ -1,8 +1,8 @@
-# Cố định Airflow + Python version (RẤT QUAN TRỌNG)
+# Cố định Airflow + Python version
 FROM apache/airflow:2.9.2-python3.10
 
 # ======================
-# System dependencies
+# System dependencies (Chạy quyền root)
 # ======================
 USER root
 RUN apt-get update && \
@@ -14,27 +14,28 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # ======================
-# Python dependencies
+# Python dependencies (Chạy quyền airflow)
 # ======================
 USER airflow
 
-# Copy requirements trước để tận dụng Docker cache
-COPY requirements.txt /requirements.txt
+# SỬA TẠI ĐÂY: Thêm --chown để user airflow có quyền đọc file requirements
+COPY --chown=airflow:root requirements.txt /requirements.txt
 
+# Cài đặt các thư viện cần thiết
+# Lưu ý: Thêm apache-airflow-providers-amazon để Airflow kết nối MinIO/S3 mượt hơn
 RUN pip install --no-cache-dir \
-    mlflow \
+    mlflow==2.11.3 \
     pandas \
     scikit-learn \
     boto3 \
     dvc[s3] \
+    apache-airflow-providers-amazon \
     -r /requirements.txt
 
 # ======================
-# Verify (optional nhưng nên có)
+# Verify
 # ======================
+# SỬA TẠI ĐÂY: Dùng lệnh đơn giản để kiểm tra, tránh dùng EOF phức tạp trong RUN
 RUN airflow version && \
     dvc version && \
-    python - <<EOF
-import mlflow
-print("MLflow version:", mlflow.__version__)
-EOF
+    python -c "import mlflow; print('MLflow version:', mlflow.__version__)"

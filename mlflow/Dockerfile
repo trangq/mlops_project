@@ -11,7 +11,7 @@ RUN apt-get update && \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir psycopg2-binary
+RUN pip install --no-cache-dir psycopg2-binary boto3
 
 COPY scripts/wait-for-it.sh /usr/local/bin/scripts/wait-for-it.sh
 RUN chmod +x /usr/local/bin/scripts/wait-for-it.sh
